@@ -1,0 +1,437 @@
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+// Author class
+class Author {
+    private String name;
+
+    public Author(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+
+// Book class
+class Book {
+    private int bookId;
+    private String title;
+    private Author author;
+    private int stock;
+
+    public Book(int bookId, String title, Author author, int stock) {
+        this.bookId = bookId;
+        this.title = title;
+        this.author = author;
+        this.stock = stock;
+    }
+
+    public int getBookId() {
+        return bookId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public Author getAuthor() {
+        return author;
+    }
+
+    public int getStock() {
+        return stock;
+    }
+
+    public void reduceStock() {
+        stock--;
+    }
+
+    public void increaseStock() {
+        stock++;
+    }
+
+    public void display() {
+        System.out.println(bookId + "\t" + title + "\t"
+                + author.getName() + "\t" + stock);
+    }
+}
+
+// Member class
+class Member {
+    protected int memberId;
+    protected String name;
+
+    public Member(int memberId, String name) {
+        this.memberId = memberId;
+        this.name = name;
+    }
+
+    public int getMemberId() {
+        return memberId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getMaxBooks() {
+        return 2;
+    }
+
+    public int getBorrowDays() {
+        return 14;
+    }
+
+    public String getMemberType() {
+        return "Regular";
+    }
+}
+
+// PremiumMember inherits Member
+class PremiumMember extends Member {
+
+    public PremiumMember(int memberId, String name) {
+        super(memberId, name);
+    }
+
+    @Override
+    public int getMaxBooks() {
+        return 5;
+    }
+
+    @Override
+    public int getBorrowDays() {
+        return 30;
+    }
+
+    @Override
+    public String getMemberType() {
+        return "Premium";
+    }
+}
+
+// BorrowTransaction class
+class BorrowTransaction {
+    private int transactionId;
+    private Book book;
+    private Member member;
+    private LocalDate borrowDate;
+    private LocalDate dueDate;
+    private boolean returned;
+
+    public BorrowTransaction(int transactionId, Book book,
+                             Member member) {
+        this.transactionId = transactionId;
+        this.book = book;
+        this.member = member;
+        this.borrowDate = LocalDate.now();
+        this.dueDate = borrowDate.plusDays(member.getBorrowDays());
+        this.returned = false;
+    }
+
+    public int getTransactionId() {
+        return transactionId;
+    }
+
+    public Book getBook() {
+        return book;
+    }
+
+    public Member getMember() {
+        return member;
+    }
+
+    public LocalDate getDueDate() {
+        return dueDate;
+    }
+
+    public boolean isReturned() {
+        return returned;
+    }
+
+    public void markReturned() {
+        returned = true;
+    }
+
+    public void printReceipt() {
+        System.out.println("\n------ BORROW RECEIPT ------");
+        System.out.println("Transaction ID : " + transactionId);
+        System.out.println("Member         : " + member.getName());
+        System.out.println("Member Type    : " + member.getMemberType());
+        System.out.println("Book           : " + book.getTitle());
+        System.out.println("Borrow Date    : " + borrowDate);
+        System.out.println("Due Date       : " + dueDate);
+        System.out.println("Stock Remaining: " + book.getStock());
+        System.out.println("----------------------------");
+    }
+}
+
+// ReturnTransaction class
+class ReturnTransaction {
+    private BorrowTransaction borrowTransaction;
+    private LocalDate returnDate;
+    private long lateDays;
+    private double fine;
+
+    public ReturnTransaction(BorrowTransaction transaction) {
+        this.borrowTransaction = transaction;
+        this.returnDate = LocalDate.now();
+
+        lateDays = Math.max(0,
+                ChronoUnit.DAYS.between(
+                        borrowTransaction.getDueDate(), returnDate));
+
+        fine = lateDays * 5.0;
+    }
+
+    public void printReceipt() {
+        System.out.println("\n------ RETURN RECEIPT ------");
+        System.out.println("Transaction ID : "
+                + borrowTransaction.getTransactionId());
+        System.out.println("Member         : "
+                + borrowTransaction.getMember().getName());
+        System.out.println("Book           : "
+                + borrowTransaction.getBook().getTitle());
+        System.out.println("Due Date       : "
+                + borrowTransaction.getDueDate());
+        System.out.println("Return Date    : " + returnDate);
+        System.out.println("Late Days      : " + lateDays);
+        System.out.printf("Fine           : Rs. %.2f%n", fine);
+        System.out.println("Stock Updated  : "
+                + borrowTransaction.getBook().getStock());
+        System.out.println("----------------------------");
+    }
+}
+
+// Library class
+class Library {
+    private List<Book> books = new ArrayList<>();
+    private List<Member> members = new ArrayList<>();
+    private List<BorrowTransaction> transactions =
+            new ArrayList<>();
+
+    private int nextTransactionId = 1;
+
+    public void addBook(Book book) {
+        if (findBook(book.getBookId()) != null) {
+            System.out.println("Book ID already exists!");
+            return;
+        }
+
+        books.add(book);
+        System.out.println("Book added successfully.");
+    }
+
+    public void addMember(Member member) {
+        if (findMember(member.getMemberId()) != null) {
+            System.out.println("Member ID already exists!");
+            return;
+        }
+
+        members.add(member);
+        System.out.println("Member added successfully.");
+    }
+
+    private Book findBook(int id) {
+        for (Book book : books) {
+            if (book.getBookId() == id) {
+                return book;
+            }
+        }
+        return null;
+    }
+
+    private Member findMember(int id) {
+        for (Member member : members) {
+            if (member.getMemberId() == id) {
+                return member;
+            }
+        }
+        return null;
+    }
+
+    public void borrowBook(int bookId, int memberId) {
+        Book book = findBook(bookId);
+        Member member = findMember(memberId);
+
+        if (book == null || member == null) {
+            System.out.println("Invalid book ID or member ID.");
+            return;
+        }
+
+        if (book.getStock() <= 0) {
+            System.out.println("Book is out of stock!");
+            return;
+        }
+
+        int borrowedCount = 0;
+
+        for (BorrowTransaction transaction : transactions) {
+            if (transaction.getMember().getMemberId() == memberId
+                    && !transaction.isReturned()) {
+                borrowedCount++;
+            }
+        }
+
+        if (borrowedCount >= member.getMaxBooks()) {
+            System.out.println("Borrowing limit reached!");
+            return;
+        }
+
+        book.reduceStock();
+
+        BorrowTransaction transaction =
+                new BorrowTransaction(nextTransactionId++, book, member);
+
+        transactions.add(transaction);
+        transaction.printReceipt();
+    }
+
+    public void returnBook(int bookId, int memberId) {
+        for (BorrowTransaction transaction : transactions) {
+            if (transaction.getBook().getBookId() == bookId
+                    && transaction.getMember().getMemberId() == memberId
+                    && !transaction.isReturned()) {
+
+                transaction.markReturned();
+                transaction.getBook().increaseStock();
+
+                ReturnTransaction returnTransaction =
+                        new ReturnTransaction(transaction);
+
+                returnTransaction.printReceipt();
+                return;
+            }
+        }
+
+        System.out.println("No active borrowing record found.");
+    }
+
+    public void displayAvailableBooks() {
+        System.out.println("\n------ AVAILABLE BOOKS ------");
+        System.out.println("ID\tTitle\tAuthor\tStock");
+
+        boolean found = false;
+
+        for (Book book : books) {
+            if (book.getStock() > 0) {
+                book.display();
+                found = true;
+            }
+        }
+
+        if (!found) {
+            System.out.println("No books currently available.");
+        }
+    }
+}
+
+// Main class
+public class LibraryManagementSystem {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Library library = new Library();
+
+        while (true) {
+            System.out.println("\n===== LIBRARY MANAGEMENT SYSTEM =====");
+            System.out.println("1. Add Book");
+            System.out.println("2. Add Member");
+            System.out.println("3. Borrow Book");
+            System.out.println("4. Return Book");
+            System.out.println("5. Display Available Books");
+            System.out.println("6. Exit");
+            System.out.print("Enter your choice: ");
+
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter Book ID: ");
+                    int bookId = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print("Enter Book Title: ");
+                    String title = sc.nextLine();
+
+                    System.out.print("Enter Author Name: ");
+                    String authorName = sc.nextLine();
+
+                    System.out.print("Enter Stock Quantity: ");
+                    int stock = sc.nextInt();
+                    sc.nextLine();
+
+                    if (stock < 0) {
+                        System.out.println("Stock cannot be negative.");
+                        break;
+                    }
+
+                    Book book = new Book(bookId, title,
+                            new Author(authorName), stock);
+                    library.addBook(book);
+                    break;
+
+                case 2:
+                    System.out.print("Enter Member ID: ");
+                    int memberId = sc.nextInt();
+                    sc.nextLine();
+
+                    System.out.print("Enter Member Name: ");
+                    String name = sc.nextLine();
+
+                    System.out.print(
+                            "Member Type (1-Regular, 2-Premium): ");
+                    int type = sc.nextInt();
+                    sc.nextLine();
+
+                    if (type == 1) {
+                        library.addMember(new Member(memberId, name));
+                    } else if (type == 2) {
+                        library.addMember(
+                                new PremiumMember(memberId, name));
+                    } else {
+                        System.out.println("Invalid member type.");
+                    }
+                    break;
+
+                case 3:
+                    System.out.print("Enter Book ID: ");
+                    int borrowBookId = sc.nextInt();
+
+                    System.out.print("Enter Member ID: ");
+                    int borrowMemberId = sc.nextInt();
+
+                    library.borrowBook(borrowBookId, borrowMemberId);
+                    break;
+
+                case 4:
+                    System.out.print("Enter Book ID: ");
+                    int returnBookId = sc.nextInt();
+
+                    System.out.print("Enter Member ID: ");
+                    int returnMemberId = sc.nextInt();
+
+                    library.returnBook(returnBookId, returnMemberId);
+                    break;
+
+                case 5:
+                    library.displayAvailableBooks();
+                    break;
+
+                case 6:
+                    System.out.println("Thank you for using the library!");
+                    sc.close();
+                    return;
+
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+}
